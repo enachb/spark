@@ -6,7 +6,8 @@ import AssemblyKeys._
 object SparkBuild extends Build {
   // Hadoop version to build against. For example, "0.20.2", "0.20.205.0", or
   // "1.0.1" for Apache releases, or "0.20.2-cdh3u3" for Cloudera Hadoop.
-  val HADOOP_VERSION = "0.20.205.0"
+  val HADOOP_VERSION = "0.20.2"
+
 
   lazy val root = Project("root", file("."), settings = sharedSettings) aggregate(core, repl, examples, bagel)
 
@@ -18,24 +19,53 @@ object SparkBuild extends Build {
 
   lazy val bagel = Project("bagel", file("bagel"), settings = bagelSettings) dependsOn (core)
 
+  val qf = "http://repo.quantifind.com/content/repositories/"
+
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     organization := "org.spark-project",
     version := "0.5.1-SNAPSHOT",
     scalaVersion := "2.9.1",
     scalacOptions := Seq(/*"-deprecation",*/ "-unchecked", "-optimize"), // -deprecation is too noisy due to usage of old Hadoop API, enable it once that's no longer an issue
-    unmanagedJars in Compile <<= baseDirectory map { base => (base / "lib" ** "*.jar").classpath },
+    unmanagedJars in Compile <<= baseDirectory map {
+      base => (base / "lib" ** "*.jar").classpath
+    },
     retrieveManaged := true,
     transitiveClassifiers in Scope.GlobalScope := Seq("sources"),
     testListeners <<= target.map(t => Seq(new eu.henkelmann.sbt.JUnitXmlTestsListener(t.getAbsolutePath))),
-    publishTo <<= baseDirectory { base => Some(Resolver.file("Local", base / "target" / "maven" asFile)(Patterns(true, Resolver.mavenStyleBasePattern))) },
+
+
+    //    publishTo <<= baseDirectory {
+    //      base => Some(Resolver.file("Local", base / "target" / "maven" asFile)(Patterns(true, Resolver.mavenStyleBasePattern)))
+    //    },
+    //    libraryDependencies ++= Seq(
+    //      "org.eclipse.jetty" % "jetty-server" % "7.5.3.v20111011",
+    //      "org.scalatest" %% "scalatest" % "1.6.1" % "test",
+    //      "org.scalacheck" %% "scalacheck" % "1.9" % "test"
+    //    ),
+    //    /* Workaround for issue #206 (fixed after SBT 0.11.0) */
+    //    watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
+    //      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply {
+    //      _.join.map(_.flatten)
+    //    }
+
+
+    publishTo <<= version {
+      (v: String) =>
+        Some("snapshots" at qf + "ext-snapshots")
+    },
+
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-server" % "7.5.3.v20111011",
       "org.scalatest" %% "scalatest" % "1.6.1" % "test",
       "org.scalacheck" %% "scalacheck" % "1.9" % "test"
     ),
+
     /* Workaround for issue #206 (fixed after SBT 0.11.0) */
     watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
-      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) }
+      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply {
+      _.join.map(_.flatten)
+    }
+
   )
 
   val slf4jVersion = "1.6.1"
