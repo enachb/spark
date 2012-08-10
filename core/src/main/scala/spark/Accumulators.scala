@@ -9,7 +9,7 @@ class Accumulable[T,R] (
     @transient initialValue: T,
     param: AccumulableParam[T,R])
   extends Serializable {
-  
+
   val id = Accumulators.newId
   @transient
   private var value_ = initialValue // Current value on master
@@ -26,14 +26,15 @@ class Accumulable[T,R] (
 
   /**
    * merge two accumulable objects together
-   * 
+   *
    * Normally, a user will not want to use this version, but will instead call `+=`.
    * @param term the other Accumulable that will get merged with this
    */
   def ++= (term: T) { value_ = param.addInPlace(value_, term)}
   def value = {
-    if (!deserialized) value_
-    else throw new UnsupportedOperationException("Can't use read value in task")
+//    if (!deserialized) value_
+//    else throw new UnsupportedOperationException("Can't use read value in task")
+    value_
   }
 
   /**
@@ -51,7 +52,7 @@ class Accumulable[T,R] (
     if (!deserialized) value_ = t
     else throw new UnsupportedOperationException("Can't use value_= in task")
   }
- 
+
   // Called by Java when deserializing an object
   private def readObject(in: ObjectInputStream) {
     in.defaultReadObject
@@ -138,7 +139,7 @@ private object Accumulators {
   val originals = Map[Long, Accumulable[_,_]]()
   val localAccums = Map[Thread, Map[Long, Accumulable[_,_]]]()
   var lastId: Long = 0
-  
+
   def newId: Long = synchronized {
     lastId += 1
     return lastId
@@ -154,7 +155,7 @@ private object Accumulators {
   }
 
   // Clear the local (non-original) accumulators for the current thread
-  def clear: Unit = synchronized { 
+  def clear: Unit = synchronized {
     localAccums.remove(Thread.currentThread)
   }
 
