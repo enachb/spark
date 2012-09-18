@@ -3,6 +3,7 @@ package spark
 import java.io._
 
 import scala.collection.mutable.Map
+import scala.collection.generic.Growable
 
 class Accumulable[T,R] (
     @transient initialValue: T,
@@ -35,7 +36,16 @@ class Accumulable[T,R] (
     else throw new UnsupportedOperationException("Can't use read value in task")
   }
 
-  private[spark] def localValue = value_
+  /**
+   * Get the current value of this accumulator from within a task.
+   *
+   * This is NOT the global value of the accumulator.  To get the global value after a
+   * completed operation on the dataset, call `value`.
+   *
+   * The typical use of this method is to directly mutate the local value, eg., to add
+   * an element to a Set.
+   */
+  def localValue = value_
 
   def value_= (t: T) {
     if (!deserialized) value_ = t
@@ -97,6 +107,28 @@ trait AccumulableParam[R,T] extends Serializable {
   def addInPlace(t1: R, t2: R): R
 
   def zero(initialValue: R): R
+}
+
+class GrowableAccumulableParam[R <% Growable[T] with TraversableOnce[T] with Serializable, T]
+extends AccumulableParam[R,T] {
+  def addAccumulator(growable: R, elem: T) : R = {
+    growable += elem
+    growable
+  }
+
+  def addInPlace(t1: R, t2: R) : R = {
+    t1 ++= t2
+    t1
+  }
+
+  def zero(initialValue: R): R = {
+    // We need to clone initialValue, but it's hard to specify that R should also be Cloneable.
+    // Instead we'll serialize it to a buffer and load it back.
+    val ser = (new spark.JavaSerializer).newInstance
+    val copy = ser.deserialize[R](ser.serialize(initialValue))
+    copy.clear()   // In case it contained stuff
+    copy
+  }
 }
 
 // TODO: The multi-thread support in accumulators is kind of lame; check
