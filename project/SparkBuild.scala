@@ -21,19 +21,22 @@ object SparkBuild extends Build {
   lazy val bagel = Project("bagel", file("bagel"), settings = bagelSettings) dependsOn (core)
 
   // A configuration to set an alternative publishLocalConfiguration
-  lazy val MavenCompile = config("m2r") extend(Compile)
-  lazy val publishLocalBoth = TaskKey[Unit]("publish-local", "publish local for m2 and ivy")
+  val qf = "http://repo.quantifind.com/content/repositories/"
 
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     organization := "org.spark-project",
-    version := "0.6.0-SNAPSHOT",
+    version := "0.5.9-SNAPSHOT",
     scalaVersion := "2.9.2",
     scalacOptions := Seq(/*"-deprecation",*/ "-unchecked", "-optimize"), // -deprecation is too noisy due to usage of old Hadoop API, enable it once that's no longer an issue
     unmanagedJars in Compile <<= baseDirectory map { base => (base / "lib" ** "*.jar").classpath },
     retrieveManaged := true,
     transitiveClassifiers in Scope.GlobalScope := Seq("sources"),
     testListeners <<= target.map(t => Seq(new eu.henkelmann.sbt.JUnitXmlTestsListener(t.getAbsolutePath))),
-    publishTo <<= baseDirectory { base => Some(Resolver.file("Local", base / "target" / "maven" asFile)(Patterns(true, Resolver.mavenStyleBasePattern))) },
+    publishTo <<= version {
+      (v: String) =>
+        Some("snapshots" at qf + "ext-snapshots")
+    },
+
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-server" % "7.5.3.v20111011",
       "org.scalatest" %% "scalatest" % "1.6.1" % "test",
@@ -43,15 +46,8 @@ object SparkBuild extends Build {
     parallelExecution := false,
     /* Workaround for issue #206 (fixed after SBT 0.11.0) */
     watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
-      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) },
+      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) }
 
-    otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
-    publishLocalConfiguration in MavenCompile <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
-      (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, Seq(), level)
-    },
-    publishMavenStyle in MavenCompile := true,
-    publishLocal in MavenCompile <<= publishTask(publishLocalConfiguration in MavenCompile, deliverLocal),
-    publishLocalBoth <<= Seq(publishLocal in MavenCompile, publishLocal).dependOn
   )
 
   val slf4jVersion = "1.6.1"
