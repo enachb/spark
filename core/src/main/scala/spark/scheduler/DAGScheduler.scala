@@ -262,8 +262,17 @@ class DAGScheduler(taskSched: TaskScheduler) extends TaskSchedulerListener with 
             submitStage(finalStage)
           }
 
-        case HostLost(host) =>
-          handleHostLost(host)
+        case HostLost(host) => {
+          //NOTE: It would be much better if spark retried in this case -- maybe even waited a few seconds to see
+          // if the host came back, and then tried to reassign.  Supposedly that's what it was doing before.  But,
+          // recovery seems totally broken, so we'd prefer to just fail
+          for (job <- activeJobs) {
+            val error = new SparkException("Job cancelled because SparkContext host was lost : " + host)
+            job.listener.jobFailed(error)
+          }
+          return
+//          handleHostLost(host)
+        }
 
         case completion: CompletionEvent =>
           handleTaskCompletion(completion)
