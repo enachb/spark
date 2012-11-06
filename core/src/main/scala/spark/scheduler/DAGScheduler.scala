@@ -383,7 +383,7 @@ class DAGScheduler(taskSched: TaskScheduler) extends TaskSchedulerListener with 
     // Get our pending tasks and remember them in our pendingTasks entry
     val myPending = pendingTasks.getOrElseUpdate(stage, new HashSet)
     myPending.clear()
-    var tasks = ArrayBuffer[Task[_]]()
+    val tasks = ArrayBuffer[Task[_]]()
     if (stage.isShuffleMap) {
       for (p <- 0 until stage.numPartitions if stage.outputLocs(p) == Nil) {
         val locs = getPreferredLocs(stage.rdd, p)

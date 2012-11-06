@@ -23,6 +23,8 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   // How often to check for speculative tasks
   val SPECULATION_INTERVAL = System.getProperty("spark.speculation.interval", "100").toLong
 
+  val BLACKLIST_FAILED_HOSTS = System.getProperty("spark.blacklisthosts", "true").toBoolean
+
   val activeTaskSets = new HashMap[String, TaskSetManager]
   var activeTaskSetsQueue = new ArrayBuffer[TaskSetManager]
 
@@ -35,6 +37,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
 
   // Which hosts in the cluster are alive (contains hostnames)
   val hostsAlive = new HashSet[String]
+  val blackListedHosts = new HashSet[String]
 
   // Which slave IDs we have executors on
   val slaveIdsWithExecutors = new HashSet[String]
@@ -116,20 +119,28 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
     synchronized {
       SparkEnv.set(sc.env)
       // Mark each slave as alive and remember its hostname
-      for (o <- offers) {
+      val filteredOffers = offers.filter{o =>
+        if (blackListedHosts(o.hostname)) {
+          logInfo("ignoring offer of " + o + " because host is blaclisted")
+          false
+        }
+        else
+          true
+      }
+      for (o <- filteredOffers) {
         slaveIdToHost(o.slaveId) = o.hostname
         hostsAlive += o.hostname
       }
       // Build a list of tasks to assign to each slave
-      val tasks = offers.map(o => new ArrayBuffer[TaskDescription](o.cores))
-      val availableCpus = offers.map(o => o.cores).toArray
+      val tasks = filteredOffers.map(o => new ArrayBuffer[TaskDescription](o.cores))
+      val availableCpus = filteredOffers.map(o => o.cores).toArray
       var launchedTask = false
       for (manager <- activeTaskSetsQueue.sortBy(m => (m.taskSet.priority, m.taskSet.stageId))) {
         do {
           launchedTask = false
-          for (i <- 0 until offers.size) {
-            val sid = offers(i).slaveId
-            val host = offers(i).hostname
+          for (i <- 0 until filteredOffers.size) {
+            val sid = filteredOffers(i).slaveId
+            val host = filteredOffers(i).hostname
             manager.slaveOffer(sid, host, availableCpus(i)) match {
               case Some(task) =>
                 tasks(i) += task
