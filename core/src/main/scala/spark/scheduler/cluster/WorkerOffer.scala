@@ -7,6 +7,6 @@ private[spark]
 class WorkerOffer(val slaveId: String, val hostname: String, val cores: Int) {
   override
   def toString() = {
-    slaveId + "\t" + hostname + "\t" + cores
+    "(" + slaveId + "," + hostname + "," + cores + ")"
   }
 }

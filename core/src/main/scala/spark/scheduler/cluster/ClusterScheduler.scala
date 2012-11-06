@@ -23,7 +23,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   // How often to check for speculative tasks
   val SPECULATION_INTERVAL = System.getProperty("spark.speculation.interval", "100").toLong
 
-  val BLACKLIST_FAILED_HOSTS = System.getProperty("spark.blacklisthosts", "true").toBoolean
+  val BLACKLIST_FAILED_HOSTS = System.getProperty("spark.blacklisthosts", "false").toBoolean
   logInfo("Blacklist Hosts = " + BLACKLIST_FAILED_HOSTS)
 
   val activeTaskSets = new HashMap[String, TaskSetManager]
@@ -120,9 +120,10 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
     synchronized {
       SparkEnv.set(sc.env)
       // Mark each slave as alive and remember its hostname
+      logInfo("got offers:" + offers)
       val filteredOffers = offers.filter{o =>
         if (blackListedHosts(o.hostname)) {
-          logInfo("ignoring offer of " + o + " because host is blaclisted")
+          logInfo("ignoring offer of " + o + " because host is blacklisted")
           false
         }
         else
