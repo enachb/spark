@@ -110,7 +110,10 @@ private[spark] class MapOutputTracker(actorSystem: ActorSystem, isMaster: Boolea
     var array = mapStatuses.get(shuffleId)
     if (array != null) {
       array.synchronized {
-        if (array(mapId).address == bmAddress) {
+        if (array(mapId) == null) {
+          logInfo("mapSustus is null for mapId: " + mapId)
+        }
+        else if (array(mapId).address == bmAddress) {
           array(mapId) = null
         }
       }
