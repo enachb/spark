@@ -196,7 +196,6 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
     }
     if (failedHost != None) {
       listener.hostLost(failedHost.get)
-      backend.reviveOffers()
     }
     if (taskFailed) {
       // Also revive offers if a task had failed for some reason other than host lost
