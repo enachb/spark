@@ -251,7 +251,8 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def slaveLost(slaveId: String) {
     var failedHost: Option[String] = None
     synchronized {
-      val hostOpt = slaveIdToHost.get(slaveId)
+      val realSlaveId = ClusterScheduler.getRealSlaveId(slaveId)
+      val hostOpt = slaveIdToHost.get(realSlaveId)
       hostOpt match {
         case None =>
           val msg = new StringBuilder()
@@ -260,7 +261,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
           logWarning(msg.toString)
         case Some(host) =>
           if (hostsAlive.contains(host)) {
-            slaveIdsWithExecutors -= slaveId
+            slaveIdsWithExecutors -= realSlaveId
             hostsAlive -= host
             activeTaskSetsQueue.foreach(_.hostLost(host))
             failedHost = Some(host)
@@ -275,4 +276,18 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def reviveOffers() {
     backend.reviveOffers()
   }
+}
+
+
+object ClusterScheduler {
+  //the reported slaveId from mesos (at least in the current trunk) is weird: "value: \"201211021432-3171224074-5050-18217-18\"\n"
+  val SLAVE_REGEX = """value: "([^"]*)"\n?""".r
+
+  def getRealSlaveId(slaveId: String) = {
+    slaveId match {
+      case SLAVE_REGEX(realSlaveId) => realSlaveId
+      case x => x
+    }
+  }
+
 }
