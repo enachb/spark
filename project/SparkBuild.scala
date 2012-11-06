@@ -42,49 +42,10 @@ object SparkBuild extends Build {
     transitiveClassifiers in Scope.GlobalScope := Seq("sources"),
     testListeners <<= target.map(t => Seq(new eu.henkelmann.sbt.JUnitXmlTestsListener(t.getAbsolutePath))),
 
-    // For Sonatype publishing
-    resolvers ++= Seq("sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-      "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"),
-
-    publishMavenStyle := true,
-
-    //useGpg in Global := true,
-
-    pomExtra := (
-      <url>http://spark-project.org/</url>
-      <licenses>
-        <license>
-          <name>BSD License</name>
-          <url>https://github.com/mesos/spark/blob/master/LICENSE</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-      <scm>
-        <connection>scm:git:git@github.com:mesos/spark.git</connection>
-        <url>scm:git:git@github.com:mesos/spark.git</url>
-      </scm>
-      <developers>
-        <developer>
-          <id>matei</id>
-          <name>Matei Zaharia</name>
-          <email>matei.zaharia@gmail.com</email>
-          <url>http://www.cs.berkeley.edu/~matei</url>
-          <organization>U.C. Berkeley Computer Science</organization>
-          <organizationUrl>http://www.cs.berkeley.edu/</organizationUrl>
-        </developer>
-      </developers>
-    ),
-
-/*
-    publishTo <<= version { (v: String) =>
-      val nexus = "https://oss.sonatype.org/"
-      if (v.trim.endsWith("SNAPSHOT"))
-        Some("sonatype-snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("sonatype-staging"  at nexus + "service/local/staging/deploy/maven2")
+    publishTo <<= version {
+      (v: String) =>
+        Some("snapshots" at qf + "ext-snapshots")
     },
-
-*/
 
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-server" % "7.5.3.v20111011",
