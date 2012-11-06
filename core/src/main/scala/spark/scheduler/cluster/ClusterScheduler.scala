@@ -252,17 +252,28 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   def slaveLost(slaveId: String) {
     var failedHost: Option[String] = None
     synchronized {
-      val host = slaveIdToHost(slaveId)
-      if (hostsAlive.contains(host)) {
-        slaveIdsWithExecutors -= slaveId
-        hostsAlive -= host
-        activeTaskSetsQueue.foreach(_.hostLost(host))
-        failedHost = Some(host)
+      val hostOpt = slaveIdToHost.get(slaveId)
+      hostOpt match {
+        case None =>
+          val msg = new StringBuilder()
+          msg.append("Got slaveLost msg for slave: \"" + slaveId + "\", but no such slave exists.  Known Slaves:\n")
+          slaveIdToHost.foreach{kv => msg.append(kv + "\n")}
+          logWarning(msg.toString)
+        case Some(host) =>
+          if (hostsAlive.contains(host)) {
+            slaveIdsWithExecutors -= slaveId
+            hostsAlive -= host
+            activeTaskSetsQueue.foreach(_.hostLost(host))
+            failedHost = Some(host)
+          }
       }
     }
     if (failedHost != None) {
       listener.hostLost(failedHost.get)
-      backend.reviveOffers()
     }
+  }
+
+  def reviveOffers() {
+    backend.reviveOffers()
   }
 }

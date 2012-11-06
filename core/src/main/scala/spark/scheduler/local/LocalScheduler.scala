@@ -132,4 +132,6 @@ private[spark] class LocalScheduler(threads: Int, maxFailures: Int, sc: SparkCon
   }
 
   override def defaultParallelism() = threads
+
+  def reviveOffers() {} //should it be a no-op or exception?
 }

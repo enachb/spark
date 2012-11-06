@@ -30,6 +30,8 @@ private[spark] case class CompletionEvent(
 
 private[spark] case class HostLost(host: String) extends DAGSchedulerEvent
 
+private[spark] case class RetryOffers(minTime: Long, lastPolled: Long) extends DAGSchedulerEvent
+
 private[spark] case class TaskSetFailed(taskSet: TaskSet, reason: String) extends DAGSchedulerEvent
 
 private[spark] case object StopDAGScheduler extends DAGSchedulerEvent

@@ -36,6 +36,7 @@ class DAGScheduler(taskSched: TaskScheduler) extends TaskSchedulerListener with 
 
   // Called by TaskScheduler when a host fails.
   override def hostLost(host: String) {
+    //we want to FIRST remove the dead host, and AFTER that is fully processed, reassign the tasks elsewhere
     eventQueue.put(HostLost(host))
   }
 
@@ -227,6 +228,10 @@ class DAGScheduler(taskSched: TaskScheduler) extends TaskSchedulerListener with 
     return listener.getResult()    // Will throw an exception if the job fails
   }
 
+
+  val RETRY_DELAY_MILLIS = 10000l
+  val POLL_DELAY_MILLIS = 100l
+
   /**
    * The main event loop of the DAG scheduler, which waits for new-job / task-finished / failure
    * events and responds by launching tasks. This runs in a dedicated thread and receives events
@@ -263,7 +268,26 @@ class DAGScheduler(taskSched: TaskScheduler) extends TaskSchedulerListener with 
           }
 
         case HostLost(host) =>
+          //after we've fully processed this host going down, then we can try to resubmit the tasks
+          // however, we don't resubmit the tasks immediately, we'll wait a bit to see if the host comes back
           handleHostLost(host)
+          val now = System.currentTimeMillis()
+          logInfo("Lost host " + host + ".  Will retry tasks in " + RETRY_DELAY_MILLIS + "ms")
+          eventQueue.put(RetryOffers(now + RETRY_DELAY_MILLIS, now))
+
+        case RetryOffers(minTime, lastPolled) =>
+          val now = System.currentTimeMillis()
+          if (now > minTime) {
+            logInfo("Retrying tasks")
+            taskSched.reviveOffers()
+          }
+          else{
+            if (now < lastPolled + POLL_DELAY_MILLIS) {
+              // we made it through the entire event queue really fast.  Lets sleep a bit
+              Thread.sleep(POLL_DELAY_MILLIS)
+            }
+            eventQueue.put(RetryOffers(minTime, now))
+          }
 
         case completion: CompletionEvent =>
           handleTaskCompletion(completion)

@@ -16,6 +16,9 @@ private[spark] trait TaskScheduler {
   // Submit a sequence of tasks to run.
   def submitTasks(taskSet: TaskSet): Unit
 
+  // TODO this probably shouldn't be here, but I need a way to call reviveOffers on MesosSchedulerBackend
+  def reviveOffers() : Unit
+
   // Set a listener for upcalls. This is guaranteed to be set before submitTasks is called.
   def setListener(listener: TaskSchedulerListener): Unit
 
