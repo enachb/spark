@@ -24,6 +24,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
   val SPECULATION_INTERVAL = System.getProperty("spark.speculation.interval", "100").toLong
 
   val BLACKLIST_FAILED_HOSTS = System.getProperty("spark.blacklisthosts", "true").toBoolean
+  logInfo("Blacklist Hosts = " + BLACKLIST_FAILED_HOSTS)
 
   val activeTaskSets = new HashMap[String, TaskSetManager]
   var activeTaskSetsQueue = new ArrayBuffer[TaskSetManager]
@@ -206,7 +207,7 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
       taskSetToUpdate.get.statusUpdate(tid, state, serializedData)
     }
     if (failedHost != None) {
-      listener.hostLost(failedHost.get)
+      handleFailedHost(failedHost.get)
     }
     if (taskFailed) {
       // Also revive offers if a task had failed for some reason other than host lost
@@ -280,8 +281,16 @@ private[spark] class ClusterScheduler(val sc: SparkContext)
       }
     }
     if (failedHost != None) {
-      listener.hostLost(failedHost.get)
+      handleFailedHost(failedHost.get)
     }
+  }
+
+  private[this] def handleFailedHost(failedHost:String) {
+    if (BLACKLIST_FAILED_HOSTS) {
+      logInfo("Blacklisting failed host: " + failedHost)
+      blackListedHosts += failedHost
+    }
+    listener.hostLost(failedHost)
   }
 
   def reviveOffers() {
