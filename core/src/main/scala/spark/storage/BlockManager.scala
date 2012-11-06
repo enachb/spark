@@ -641,6 +641,9 @@ class BlockManager(val master: BlockManagerMaster, val serializer: Serializer, m
   }
 
 
+  val OLD_BLOCK_MODE = System.getProperty("spark.oldblockmode", "0").toInt
+
+
   /**
    * Put a new block of serialized bytes to the block manager.
    */
@@ -659,6 +662,16 @@ class BlockManager(val master: BlockManagerMaster, val serializer: Serializer, m
 
     if (blockInfo.containsKey(blockId)) {
       logWarning("Block " + blockId + " already exists on this machine; not re-adding it")
+      val oldBlock = blockInfo.get(blockId)
+      OLD_BLOCK_MODE match {
+        case 0 => //no-op
+        case 1 =>
+          logInfo("waiting for block to be ready")
+          oldBlock.waitForReady()
+        case 2 =>
+          logInfo("marking block as ready")
+          oldBlock.markReady(bytes.limit)
+      }
       return
     }
 
