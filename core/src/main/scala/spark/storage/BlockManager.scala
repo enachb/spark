@@ -640,8 +640,7 @@ class BlockManager(val master: BlockManagerMaster, val serializer: Serializer, m
     return size
   }
 
-
-  val OLD_BLOCK_MODE = System.getProperty("spark.oldblockmode", "2").toInt
+  val OLD_BLOCK_MODE = Option(System.getenv("spark.oldblockmode")).getOrElse("2").toInt
   logInfo("OLD_BLOCK_MODE = " + OLD_BLOCK_MODE)
 
 
