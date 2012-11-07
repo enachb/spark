@@ -641,7 +641,7 @@ class BlockManager(val master: BlockManagerMaster, val serializer: Serializer, m
   }
 
 
-  val OLD_BLOCK_MODE = System.getProperty("spark.oldblockmode", "0").toInt
+  val OLD_BLOCK_MODE = System.getProperty("spark.oldblockmode", "2").toInt
   logInfo("OLD_BLOCK_MODE = " + OLD_BLOCK_MODE)
 
 
