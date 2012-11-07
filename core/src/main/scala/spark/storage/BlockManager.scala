@@ -665,7 +665,8 @@ class BlockManager(val master: BlockManagerMaster, val serializer: Serializer, m
       logWarning("Block " + blockId + " already exists on this machine; not re-adding it")
       val oldBlock = blockInfo.get(blockId)
       OLD_BLOCK_MODE match {
-        case 0 => //no-op
+        case 0 =>
+          logInfo("no-op")
         case 1 =>
           logInfo("waiting for block to be ready")
           oldBlock.waitForReady()
