@@ -75,17 +75,17 @@ private[spark] class Client(
         }
 
       case Terminated(actor_) if actor_ == master =>
-        logError("Connection to master failed; stopping client")
+        logError("Connection to master failed; stopping client -- Terminated(" + actor + ")")
         markDisconnected()
         context.stop(self)
 
       case RemoteClientDisconnected(transport, address) if address == masterAddress =>
-        logError("Connection to master failed; stopping client")
+        logError("Connection to master failed; stopping client -- RemoteClientDisconected(" + transport + "," + address + ")")
         markDisconnected()
         context.stop(self)
 
       case RemoteClientShutdown(transport, address) if address == masterAddress =>
-        logError("Connection to master failed; stopping client")
+        logError("Connection to master failed; stopping client -- RemoteClientShutdown(" + transport + "," + address + ")")
         markDisconnected()
         context.stop(self)
 
