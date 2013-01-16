@@ -28,6 +28,7 @@ object SparkBuild extends Build {
   lazy val bagel = Project("bagel", file("bagel"), settings = bagelSettings) dependsOn (core)
 
   // A configuration to set an alternative publishLocalConfiguration
+  val qf = "http://repo.quantifind.com/content/repositories/"
   lazy val MavenCompile = config("m2r") extend(Compile)
   lazy val publishLocalBoth = TaskKey[Unit]("publish-local", "publish local for m2 and ivy")
 
