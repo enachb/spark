@@ -57,15 +57,7 @@ object SparkBuild extends Build {
     parallelExecution := false,
     /* Workaround for issue #206 (fixed after SBT 0.11.0) */
     watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
-      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) },
-
-    otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
-    publishLocalConfiguration in MavenCompile <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
-      (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, Seq(), level)
-    },
-    publishMavenStyle in MavenCompile := true,
-    publishLocal in MavenCompile <<= publishTask(publishLocalConfiguration in MavenCompile, deliverLocal),
-    publishLocalBoth <<= Seq(publishLocal in MavenCompile, publishLocal).dependOn
+      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) }
   )
 
   val slf4jVersion = "1.6.1"
