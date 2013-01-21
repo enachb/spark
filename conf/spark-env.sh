@@ -7,4 +7,6 @@
 # - SCALA_HOME, to point to your Scala installation
 
 MESOS_NATIVE_LIBRARY=/usr/local/lib/libmesos.so
-SCALA_HOME=/usr/local/scala-2.9.1-1
+if [ -z "$SCALA_HOME" ] ; then
+  SCALA_HOME=/usr/local/scala-2.9.1-1
+fi
