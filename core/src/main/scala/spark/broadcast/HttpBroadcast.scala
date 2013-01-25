@@ -104,8 +104,7 @@ private object HttpBroadcast extends Logging {
     } else {
       new FastBufferedOutputStream(new FileOutputStream(file), bufferSize)
     }
-    val serBufferSize = System.getProperty("spark.kryo.broadcast.buffer.mb", "32").toInt * 1024 * 1024
-    val ser = new KryoSerializer(serBufferSize).newInstance()
+    val ser = SparkEnv.get.serializer.newInstance()
     val serOut = ser.serializeStream(out)
     serOut.writeObject(value)
     serOut.close()
@@ -118,9 +117,7 @@ private object HttpBroadcast extends Logging {
     } else {
       new FastBufferedInputStream(new URL(url).openStream(), bufferSize)
     }
-
-    val serBufferSize = System.getProperty("spark.kryo.broadcast.buffer.mb", "32").toInt * 1024 * 1024
-    val ser = new KryoSerializer(serBufferSize).newInstance()
+    val ser = SparkEnv.get.serializer.newInstance()
     val serIn = ser.deserializeStream(in)
     val obj = serIn.readObject[T]()
     serIn.close()
