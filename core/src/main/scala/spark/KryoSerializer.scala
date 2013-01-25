@@ -170,12 +170,17 @@ trait KryoRegistrator {
 /**
  * A Spark serializer that uses the [[http://code.google.com/p/kryo/wiki/V1Documentation Kryo 1.x library]].
  */
-class KryoSerializer(bufferSize: Int = System.getProperty("spark.kryoserializer.buffer.mb", "32").toInt * 1024 * 1024)
+class KryoSerializer(bufferSize: Int)
   extends spark.serializer.Serializer with Logging {
+
+
+  def this() {
+    this(System.getProperty("spark.kryoserializer.buffer.mb", "32").toInt * 1024 * 1024)
+  }
+
 
   // Make this lazy so that it only gets called once we receive our first task on each executor,
   // so we can pull out any custom Kryo registrator from the user's JARs.
-
   lazy val kryo = createKryo()
 
 
