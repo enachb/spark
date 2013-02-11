@@ -10,7 +10,8 @@ case class TaskMetrics(
   val remoteBytesRead: Option[Long],
   val shuffleBytesWritten: Option[Long],
   executorDeserializeTime: Int,
-  executorRunTime:Int
+  executorRunTime:Int,
+  resultSize: Long
 ) {
 
 }
@@ -25,7 +26,8 @@ object TaskMetrics {
       task.remoteReadBytes,
       task.shuffleBytesWritten,
       (taskStart - executorStart).toInt,
-      (taskFinish - taskStart).toInt
+      (taskFinish - taskStart).toInt,
+      -1l //filled in later
     )
   }
 }
