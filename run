@@ -13,6 +13,18 @@ if [ -e $FWDIR/conf/spark-env.sh ] ; then
   . $FWDIR/conf/spark-env.sh
 fi
 
+if [ -z "$1" ]; then
+  echo "Usage: run <spark-class> [<args>]" >&2
+  exit 1
+fi
+
+# If this is a standalone cluster daemon, reset SPARK_JAVA_OPTS and SPARK_MEM to reasonable
+# values for that; it doesn't need a lot
+if [ "$1" = "spark.deploy.master.Master" -o "$1" = "spark.deploy.worker.Worker" ]; then
+  SPARK_MEM=${SPARK_DAEMON_MEMORY:-512m}
+  SPARK_JAVA_OPTS=$SPARK_DAEMON_JAVA_OPTS   # Empty by default
+fi
+
 if [ "$SPARK_LAUNCH_WITH_SCALA" == "1" ]; then
   if [ `command -v scala` ]; then
     RUNNER="scala"
@@ -74,15 +86,11 @@ fi
 CLASSPATH+=":$CORE_DIR/src/main/resources"
 CLASSPATH+=":$REPL_DIR/target/scala-$SCALA_VERSION/classes"
 CLASSPATH+=":$EXAMPLES_DIR/target/scala-$SCALA_VERSION/classes"
-for jar in `find $FWDIR/lib_managed/jars -name '*jar'`; do
-  CLASSPATH+=":$jar"
-done
-for jar in `find $FWDIR/lib_managed/bundles -name '*jar'`; do
-  CLASSPATH+=":$jar"
-done
-for jar in `find $REPL_DIR/lib -name '*jar'`; do
-  CLASSPATH+=":$jar"
-done
+if [ -e "$FWDIR/lib_managed" ]; then
+  CLASSPATH+=":$FWDIR/lib_managed/jars/*"
+  CLASSPATH+=":$FWDIR/lib_managed/bundles/*"
+fi
+CLASSPATH+=":$REPL_DIR/lib/*"
 CLASSPATH+=":$BAGEL_DIR/target/scala-$SCALA_VERSION/classes"
 export CLASSPATH # Needed for spark-shell
 

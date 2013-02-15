@@ -68,6 +68,10 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
         sender ! true
         context.stop(self)
 
+      case RemoveSlave(slaveId) =>
+        removeSlave(slaveId)
+        sender ! true
+
       case Terminated(actor) =>
         actorToSlaveId.get(actor).foreach(removeSlave)
 
@@ -100,16 +104,18 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
 
     // Remove a disconnected slave from the cluster
     def removeSlave(slaveId: String) {
-      logInfo("Slave " + slaveId + " disconnected, so removing it")
-      val numCores = freeCores(slaveId)
-      actorToSlaveId -= slaveActor(slaveId)
-      addressToSlaveId -= slaveAddress(slaveId)
-      slaveActor -= slaveId
-      slaveHost -= slaveId
-      freeCores -= slaveId
-      slaveHost -= slaveId
-      totalCoreCount.addAndGet(-numCores)
-      scheduler.slaveLost(slaveId)
+      if (slaveActor.contains(slaveId)) {
+        logInfo("Slave " + slaveId + " disconnected, so removing it")
+        val numCores = freeCores(slaveId)
+        actorToSlaveId -= slaveActor(slaveId)
+        addressToSlaveId -= slaveAddress(slaveId)
+        slaveActor -= slaveId
+        slaveHost -= slaveId
+        freeCores -= slaveId
+        slaveHost -= slaveId
+        totalCoreCount.addAndGet(-numCores)
+        scheduler.slaveLost(slaveId)
+      }
     }
   }
 
@@ -145,6 +151,18 @@ class StandaloneSchedulerBackend(scheduler: ClusterScheduler, actorSystem: Actor
 
   def reviveOffers() {
     masterActor ! ReviveOffers
+  }
+
+  // Called by subclasses when notified of a lost worker
+  def removeSlave(slaveId: String) {
+    try {
+      val timeout = 5.seconds
+      val future = masterActor.ask(RemoveSlave(slaveId))(timeout)
+      Await.result(future, timeout)
+    } catch {
+      case e: Exception =>
+        throw new SparkException("Error notifying standalone scheduler's master actor", e)
+    }
   }
 
   def defaultParallelism(): Int = math.max(totalCoreCount.get(), 2)
