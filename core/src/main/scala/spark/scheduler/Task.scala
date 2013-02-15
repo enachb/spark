@@ -16,6 +16,17 @@ private[spark] abstract class Task[T](val stageId: Int) extends Serializable {
   def preferredLocations: Seq[String] = Nil
 
   var generation: Long = -1   // Map output tracker generation. Will be set by TaskScheduler.
+
+  var shuffleReadMillis : Option[Long] = None
+  var remoteReadBytes : Option[Long] = None
+  var remoteFetchWaitTime : Option[Long] = None
+  var remoteFetchTime : Option[Long] = None
+  var totalBlocksFetched : Option[Int] = None
+  var remoteBlocksFetched: Option[Int] = None
+  var localBlocksFetched: Option[Int] = None
+
+  var shuffleBytesWritten : Option[Long] = None
+
 }
 
 /**

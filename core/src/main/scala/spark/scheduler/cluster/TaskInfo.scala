@@ -1,5 +1,7 @@
 package spark.scheduler.cluster
 
+import spark.executor.TaskMetrics
+
 /**
  * Information about a running task attempt inside a TaskSet.
  */
@@ -9,7 +11,8 @@ class TaskInfo(
     val index: Int,
     val launchTime: Long,
     val executorId: String,
-    val host: String) {
+    val host: String,
+    val preferred: Boolean) {
   var finishTime: Long = 0
   var failed = false
 
