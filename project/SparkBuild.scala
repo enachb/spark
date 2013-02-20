@@ -28,6 +28,7 @@ object SparkBuild extends Build {
   lazy val bagel = Project("bagel", file("bagel"), settings = bagelSettings) dependsOn (core)
 
   // A configuration to set an alternative publishLocalConfiguration
+  val qf = "http://repo.quantifind.com/content/repositories/"
   lazy val MavenCompile = config("m2r") extend(Compile)
   lazy val publishLocalBoth = TaskKey[Unit]("publish-local", "publish local for m2 and ivy")
 
@@ -42,49 +43,11 @@ object SparkBuild extends Build {
     transitiveClassifiers in Scope.GlobalScope := Seq("sources"),
     testListeners <<= target.map(t => Seq(new eu.henkelmann.sbt.JUnitXmlTestsListener(t.getAbsolutePath))),
 
-    // For Sonatype publishing
-    resolvers ++= Seq("sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-      "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"),
-
-    publishMavenStyle := true,
-
-    //useGpg in Global := true,
-
-    pomExtra := (
-      <url>http://spark-project.org/</url>
-      <licenses>
-        <license>
-          <name>BSD License</name>
-          <url>https://github.com/mesos/spark/blob/master/LICENSE</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-      <scm>
-        <connection>scm:git:git@github.com:mesos/spark.git</connection>
-        <url>scm:git:git@github.com:mesos/spark.git</url>
-      </scm>
-      <developers>
-        <developer>
-          <id>matei</id>
-          <name>Matei Zaharia</name>
-          <email>matei.zaharia@gmail.com</email>
-          <url>http://www.cs.berkeley.edu/~matei</url>
-          <organization>U.C. Berkeley Computer Science</organization>
-          <organizationUrl>http://www.cs.berkeley.edu/</organizationUrl>
-        </developer>
-      </developers>
-    ),
-
-/*
-    publishTo <<= version { (v: String) =>
-      val nexus = "https://oss.sonatype.org/"
-      if (v.trim.endsWith("SNAPSHOT"))
-        Some("sonatype-snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("sonatype-staging"  at nexus + "service/local/staging/deploy/maven2")
+    publishTo <<= version {
+      (v: String) =>
+        Some("snapshots" at qf + "ext-snapshots")
     },
 
-*/
 
     libraryDependencies ++= Seq(
     "org.eclipse.jetty" % "jetty-server"    % "7.5.3.v20111011",
@@ -95,15 +58,7 @@ object SparkBuild extends Build {
     parallelExecution := false,
     /* Workaround for issue #206 (fixed after SBT 0.11.0) */
     watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
-      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) },
-
-    otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
-    publishLocalConfiguration in MavenCompile <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
-      (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, Seq(), level)
-    },
-    publishMavenStyle in MavenCompile := true,
-    publishLocal in MavenCompile <<= publishTask(publishLocalConfiguration in MavenCompile, deliverLocal),
-    publishLocalBoth <<= Seq(publishLocal in MavenCompile, publishLocal).dependOn
+      const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) }
   )
 
   val slf4jVersion = "1.6.1"
