@@ -4,7 +4,7 @@ SH=${HOSTS//,/ }
 if [ -z "$REV" ] ; then
   REV=$(git rev-parse --short HEAD)
 fi
-VERSION=0.6.2
+VERSION=0.6.3
 sudo cp -r ../spark /usr/local/spark-$VERSION-$REV
 for h in ${SH[*]}; do
   echo $h
