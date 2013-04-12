@@ -41,7 +41,7 @@ private[spark] object AkkaUtils {
       akka.actor.default-dispatcher.throughput = %d
       """.format(host, port, akkaTimeout, akkaFrameSize, akkaThreads, akkaBatchSize))
 
-    val actorSystem = ActorSystem("spark", akkaConf, getClass.getClassLoader)
+    val actorSystem = ActorSystem("spark", akkaConf)
 
     // Figure out the port number we bound to, in case port was passed as 0. This is a bit of a
     // hack because Akka doesn't let you figure out the port through the public API yet.
