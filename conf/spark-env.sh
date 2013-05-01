@@ -8,5 +8,5 @@
 
 MESOS_NATIVE_LIBRARY=/usr/local/lib/libmesos.so
 if [ -z "$SCALA_HOME" ] ; then
-  SCALA_HOME=/usr/local/scala-2.9.1-1
+  SCALA_HOME=/usr/local/scala-2.9.3
 fi
