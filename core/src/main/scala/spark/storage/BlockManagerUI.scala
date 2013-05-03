@@ -1,7 +1,7 @@
 package spark.storage
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.util.Timeout
+import akka.util.{Duration, Timeout}
 import akka.util.duration._
 import cc.spray.typeconversion.TwirlSupport._
 import cc.spray.Directives
