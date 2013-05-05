@@ -242,7 +242,7 @@ private[spark] class Master(ip: String, port: Int, webUiPort: Int) extends Actor
   def addApplication(desc: ApplicationDescription, driver: ActorRef): ApplicationInfo = {
     val now = System.currentTimeMillis()
     val date = new Date(now)
-    val app = new ApplicationInfo(now, newApplicationId(date), desc, date, driver)
+    val app = new ApplicationInfo(now, newApplicationId(date), desc, date, driver, desc.appUIHost, desc.appUIPort)
     apps += app
     idToApp(app.id) = app
     actorToApp(driver) = app
