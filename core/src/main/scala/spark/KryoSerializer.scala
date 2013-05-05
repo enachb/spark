@@ -2,10 +2,10 @@ package spark
 
 import java.io._
 import java.nio.ByteBuffer
-import com.twitter.chill.KryoBijection
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 import com.esotericsoftware.kryo.io.{Input => KryoInput, Output => KryoOutput}
 import com.esotericsoftware.kryo.serializers.{JavaSerializer => KryoJavaSerializer}
+import com.twitter.chill.KryoBijection
 import serializer.{SerializerInstance, DeserializationStream, SerializationStream}
 import spark.broadcast._
 import spark.storage._
@@ -41,9 +41,9 @@ private[spark] class KryoDeserializationStream(kryo: Kryo, inStream: InputStream
 }
 
 private[spark] class KryoSerializerInstance(ks: KryoSerializer) extends SerializerInstance {
-  val kryo = ks.newKryo()
-  val output = ks.newOutput()
-  val input = ks.newInput()
+  val kryo = ks.kryo.get()
+  val output = ks.output.get()
+  val input = ks.input.get()
 
   def serialize[T](t: T): ByteBuffer = {
     output.clear()
@@ -88,9 +88,17 @@ trait KryoRegistrator {
 class KryoSerializer extends spark.serializer.Serializer with Logging {
   private val bufferSize = System.getProperty("spark.kryoserializer.buffer.mb", "2").toInt * 1024 * 1024
 
-  def newOutput(): KryoOutput = new KryoOutput(bufferSize)
+  val kryo = new ThreadLocal[Kryo] {
+    override def initialValue = newKryo()
+  }
 
-  def newInput(): KryoInput = new KryoInput(bufferSize)
+  val output = new ThreadLocal[KryoOutput] {
+    override def initialValue = new KryoOutput(bufferSize)
+  }
+
+  val input = new ThreadLocal[KryoInput] {
+    override def initialValue = new KryoInput(bufferSize)
+  }
 
   def newKryo(): Kryo = {
     val kryo = KryoBijection.getKryo
@@ -117,7 +125,7 @@ class KryoSerializer extends spark.serializer.Serializer with Logging {
         logInfo("Running user registrator: " + regCls)
         val reg = Class.forName(regCls, true, classLoader).newInstance().asInstanceOf[KryoRegistrator]
         reg.registerClasses(kryo)
-}
+      }
     } catch {
       case _: Exception => println("Failed to register spark.kryo.registrator")
     }
@@ -130,4 +138,3 @@ class KryoSerializer extends spark.serializer.Serializer with Logging {
     new KryoSerializerInstance(this)
   }
 }
-
