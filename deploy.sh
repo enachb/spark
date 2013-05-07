@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ -z "$HOSTS" ] ; then
+  USER="root"
+  CLUSTER="dhd"
+  HOSTS="${USER}@${CLUSTER}0"
+  for i in {1..11}
+  do
+    HOSTS="${HOSTS},${USER}@${CLUSTER}${i}"
+  done
+fi
+
 SH=${HOSTS//,/ }
 if [ -z "$REV" ] ; then
   REV=$(git rev-parse --short HEAD)
